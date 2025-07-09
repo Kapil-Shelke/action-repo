@@ -31,6 +31,8 @@ def webhook():
 
     # ✅ Extract data from GitHub webhook payload
     actor = data.get("pusher", {}).get("name", "unknown")
+    print("Github Webhook received!")
+    print("actor:",actor)
     action = "pushed code"
     timestamp = data.get("head_commit", {}).get("timestamp", "unknown")
 
