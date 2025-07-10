@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, render_template, jsonify
 from pymongo import MongoClient
 from datetime import datetime
 
@@ -11,7 +11,20 @@ collection = db["events"]
 
 @app.route("/")
 def home():
-    return "Webhook server is running!"
+    return render_template("index.html")
+
+@app.route("/api/events", methods=["GET"])
+def get_events():
+    events = []
+    for event in collection.find().sort("_id", -1).limit(10):
+        if event.get("author") != "unknown":
+            events.append({
+                "author": event.get("author", "unknown"),
+                "action": event.get("action", "unknown"),
+                "to_branch": event.get("to_branch", ""),
+                "timestamp": event.get("timestamp", "unknown")
+            })
+    return jsonify(events)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -19,7 +32,6 @@ def webhook():
     if not data:
         return "No data", 400
 
-    # Get event type from headers
     github_event = request.headers.get("X-GitHub-Event", "")
     author = ""
     action = ""
@@ -47,13 +59,11 @@ def webhook():
     else:
         return "Event not handled", 200
 
-    # Skip saving if author is unknown
     if not author or author == "unknown":
         return "Invalid data", 400
 
     timestamp = datetime.utcnow().isoformat() + "Z"
 
-    # Insert into MongoDB
     collection.insert_one({
         "author": author,
         "action": action,
