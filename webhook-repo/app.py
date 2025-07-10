@@ -18,6 +18,8 @@ def get_events():
         events.append({
             "actor": event.get("actor", "unknown"),
             "action": event.get("action", "did something"),
+            "from_branch": event.get("from_branch","unknown"),
+            "to_branch": event.get("to_branch","unknown"),
             "timestamp": event.get("timestamp", "unknown")
         })
     return jsonify(events)
