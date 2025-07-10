@@ -10,7 +10,7 @@
             list.innerHTML = "";
             events.forEach(e => {
                 const item = document.createElement("li");
-                item.textContent = ✔ ${e.actor} ${e.action} on ${e.timestamp};
+                item.textContent = `${e.actor} ${e.action} on ${e.timestamp}`;
                 list.appendChild(item);
             });
         }
