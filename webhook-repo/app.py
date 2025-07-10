@@ -1,78 +1,47 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
-from datetime import datetime
 
 app = Flask(__name__)
 
-# MongoDB Connection
-client = MongoClient("mongodb://localhost:27017/")
-db = client["github_events"]
-collection = db["events"]
+client = MongoClient('mongodb://localhost:27017/')
+db = client['github_events']
+collection = db['events']
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
-@app.route("/api/events", methods=["GET"])
+@app.route("/api/events")
 def get_events():
     events = []
     for event in collection.find().sort("_id", -1).limit(10):
         events.append({
-            "author": event.get("author", "unknown"),
-            "action": event.get("action", "unknown"),
-            "to_branch": event.get("to_branch", "unknown"),
+            "actor": event.get("actor", "unknown"),
+            "action": event.get("action", "did something"),
             "timestamp": event.get("timestamp", "unknown")
         })
     return jsonify(events)
 
+# ✅ Webhook Route
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
     if not data:
         return "No data", 400
 
-    github_event = request.headers.get("X-GitHub-Event", "")
-    author = ""
-    action = ""
-    from_branch = ""
-    to_branch = ""
+    # ✅ Extract data from GitHub webhook payload
+    actor = data.get("pusher", {}).get("name", "unknown")
+    action = "pushed code"
+    timestamp = data.get("head_commit", {}).get("timestamp", "unknown")
 
-    if github_event == "push":
-        action = "PUSH"
-        author = data.get("pusher", {}).get("name", "unknown")
-        to_branch = data.get("ref", "").split("/")[-1]
-
-    elif github_event == "pull_request":
-        pr_action = data.get("action", "").lower()
-        if pr_action == "opened":
-            action = "PULL_REQUEST"
-        elif pr_action == "closed" and data.get("pull_request", {}).get("merged", False):
-            action = "MERGE"
-        else:
-            return "Event not handled", 200
-
-        author = data.get("pull_request", {}).get("user", {}).get("login", "unknown")
-        from_branch = data.get("pull_request", {}).get("head", {}).get("ref", "")
-        to_branch = data.get("pull_request", {}).get("base", {}).get("ref", "")
-
-    else:
-        return "Event not handled", 200
-
-    if not author or author == "unknown":
-        return "Invalid data", 400
-
-    timestamp = datetime.utcnow().isoformat() + "Z"
-
+    # ✅ Insert into MongoDB
     collection.insert_one({
-        "author": author,
+        "actor": actor,
         "action": action,
-        "from_branch": from_branch,
-        "to_branch": to_branch,
         "timestamp": timestamp
     })
 
-    print("Saved event:", action, author, to_branch)
-    return "webhook received", 200
+    return "Webhook received", 200
 
 if __name__ == "__main__":
     app.run(debug=True)
