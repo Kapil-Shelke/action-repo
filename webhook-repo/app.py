@@ -4,7 +4,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# MongoDB setup
+# MongoDB Connection
 client = MongoClient("mongodb://localhost:27017/")
 db = client["github_events"]
 collection = db["events"]
@@ -17,13 +17,12 @@ def home():
 def get_events():
     events = []
     for event in collection.find().sort("_id", -1).limit(10):
-        if event.get("author") != "unknown":
-            events.append({
-                "author": event.get("author", "unknown"),
-                "action": event.get("action", "unknown"),
-                "to_branch": event.get("to_branch", ""),
-                "timestamp": event.get("timestamp", "unknown")
-            })
+        events.append({
+            "author": event.get("author", "unknown"),
+            "action": event.get("action", "unknown"),
+            "to_branch": event.get("to_branch", "unknown"),
+            "timestamp": event.get("timestamp", "unknown")
+        })
     return jsonify(events)
 
 @app.route("/webhook", methods=["POST"])

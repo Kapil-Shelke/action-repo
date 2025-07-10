@@ -4,24 +4,25 @@
     <title>GitHub Events</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f3f3f3;
-            padding: 20px;
+            font-family: Arial;
+            background-color: #f0f0f0;
+            padding: 30px;
         }
         h1 {
-            color: #333;
+            color: #222;
         }
         ul {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
             list-style: none;
+            padding: 0;
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
         }
         li {
             margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ccc;
             font-size: 16px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
         }
     </style>
 </head>
@@ -30,25 +31,20 @@
     <ul id="eventList"></ul>
 
     <script>
-        async function fetchEvents() {
-            try {
-                const res = await fetch('/api/events');
-                const data = await res.json();
-                const list = document.getElementById('eventList');
-                list.innerHTML = '';
-
-                data.forEach(event => {
-                    const li = document.createElement('li');
-                    li.textContent = ${event.author} ${event.action} to ${event.to_branch} on ${event.timestamp};
-                    list.appendChild(li);
-                });
-            } catch (err) {
-                console.error("Error fetching events:", err);
-            }
+        async function loadEvents() {
+            const res = await fetch('/api/events');
+            const data = await res.json();
+            const list = document.getElementById('eventList');
+            list.innerHTML = '';
+            data.forEach(e => {
+                const li = document.createElement('li');
+                li.textContent = ${e.author} ${e.action} to ${e.to_branch} on ${e.timestamp};
+                list.appendChild(li);
+            });
         }
 
-        fetchEvents(); // load immediately
-        setInterval(fetchEvents, 15000); // refresh every 15 sec
+        loadEvents();
+        setInterval(loadEvents, 15000); // refresh every 15 sec
     </script>
 </body>
 </html>
