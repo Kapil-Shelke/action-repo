@@ -23,27 +23,45 @@ def get_events():
         })
     return jsonify(events)
 
-# ✅ Webhook Route
+# Webhook Route
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
     if not data:
         return "No data", 400
 
-    author = data.get("pusher", {}).get("name", "unknown")
-    branch = data.get("ref", "").split("/")[-1] or "main"
-    now = datetime.utcnow() + timedelta(hours=5, minutes=30) 
+    action = ""
+    author = ""
+    branch = ""
+
+    # PUSH event
+    if "pusher" in data:
+        author = data.get("pusher", {}).get("name", "unknown")
+        branch = data.get("ref", "").split("/")[-1] or "main"
+        action = f"pushed to {branch}"
+
+    # PULL REQUEST CREATED
+    elif data.get("action") == "opened" and "pull_request" in data:
+        author = data.get("sender", {}).get("login", "unknown")
+        branch = data.get("pull_request", {}).get("base", {}).get("ref", "main")
+        action = f"created pull request to {branch}"
+
+    # PULL REQUEST MERGED
+    elif data.get("action") == "closed" and data.get("pull_request", {}).get("merged", False):
+        author = data.get("sender", {}).get("login", "unknown")
+        branch = data.get("pull_request", {}).get("base", {}).get("ref", "main")
+        action = f"merged pull request to {branch}"
+
+    # Format timestamp
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
     formatted_time = now.strftime("%d %B %Y - %I:%M %p UTC")
 
-    action = f'pushed to {branch}'
-    timestamp = formatted_time
-
-    # ✅ Insert into MongoDB
-    collection.insert_one({
-   "author": author,
-    "action": action,
-    "timestamp": timestamp
-    })
+    if action:
+        collection.insert_one({
+            "author": author,
+            "action": action,
+            "timestamp": formatted_time
+        })
 
     return "Webhook received", 200
 
