@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GitHub Events</title>
-  <script>
-    async function fetchEvents() {
-      const response = await fetch('/api/events');
-      const events = await response.json();
-      const list = document.getElementById("event-list");
-      list.innerHTML = "";
-      events.forEach(e => {
-        const item = document.createElement("li");
-        item.textContent = e.action;
-        list.appendChild(item);
-      });
-    }
-
-    setInterval(fetchEvents, 15000);
-    window.onload = fetchEvents;
-  </script>
+    <title>GitHub Events</title>
+    <script>
+        async function fetchEvents() {
+            const response = await fetch('/api/events');
+            const events = await response.json();
+            const list = document.getElementById("event-list");
+            list.innerHTML = "";
+            events.forEach(e => {
+                console.log(e);
+                const item = document.createElement("li");
+                item.textContent = `${e.author} ${e.action} on ${e.timestamp}`;
+                list.appendChild(item);
+            });
+        }
+        setInterval(fetchEvents, 15000);
+        window.onload = fetchEvents;
+    </script>
 </head>
 <body>
-  <h1>GitHub Events</h1>
-  <ul id="event-list"></ul>
+    <h1>GitHub Events</h1>
+    <ul id="event-list"></ul>
 </body>
 </html>
