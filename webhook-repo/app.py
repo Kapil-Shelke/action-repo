@@ -31,7 +31,7 @@ def webhook():
 
     # ✅ Extract data from GitHub webhook payload
     actor = data.get("pusher", {}).get("name", "unknown")
-    action = "pushed code"
+    action = "PUSH"
     timestamp = data.get("head_commit", {}).get("timestamp", "unknown")
 
     # ✅ Insert into MongoDB
