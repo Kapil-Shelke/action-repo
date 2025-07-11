@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
 
@@ -17,7 +17,7 @@ def get_events():
     events = []
     for event in collection.find().sort("_id", -1).limit(10):
         events.append({
-            "actor": event.get("actor", "unknown"),
+            "author": event.get("author", "unknown"),
             "action": event.get("action", "did something"),
             "timestamp": event.get("timestamp", "unknown")
         })
@@ -30,9 +30,9 @@ def webhook():
     if not data:
         return "No data", 400
 
-    actor = data.get("pusher", {}).get("name", "unknown")
+    author = data.get("pusher", {}).get("name", "unknown")
     branch = data.get("ref", "").split("/")[-1] or "main"
-    now = datetime.utcnow()
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30) 
     formatted_time = now.strftime("%d %B %Y - %I:%M %p UTC")
 
     action = f'pushed to {branch}'
@@ -40,7 +40,7 @@ def webhook():
 
     # ✅ Insert into MongoDB
     collection.insert_one({
-   "actor": actor,
+   "author": author,
     "action": action,
     "timestamp": timestamp
     })
