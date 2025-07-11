@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
 
@@ -29,16 +30,19 @@ def webhook():
     if not data:
         return "No data", 400
 
-    # ✅ Extract data from GitHub webhook payload
     actor = data.get("pusher", {}).get("name", "unknown")
-    action = "PUSH"
-    timestamp = data.get("head_commit", {}).get("timestamp", "unknown")
+    branch = data.get("ref", "").split("/")[-1] or "main"
+    now = datetime.utcnow()
+    formatted_time = now.strftime("%d %B %Y - %I:%M %p UTC")
+
+    action = f'pushed to {branch}'
+    timestamp = formatted_time
 
     # ✅ Insert into MongoDB
     collection.insert_one({
-        "actor": actor,
-        "action": action,
-        "timestamp": timestamp
+   "actor": actor,
+    "action": action,
+    "timestamp": timestamp
     })
 
     return "Webhook received", 200
