@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, request, jsonify
 from pymongo import MongoClient
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -23,45 +23,44 @@ def get_events():
         })
     return jsonify(events)
 
-# Webhook Route
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
     if not data:
         return "No data", 400
 
+    event_type = request.headers.get("X-GitHub-Event")
+    author = "unknown"
     action = ""
-    author = ""
     branch = ""
 
-    # PUSH event
-    if "pusher" in data:
+    if event_type == "push":
         author = data.get("pusher", {}).get("name", "unknown")
-        branch = data.get("ref", "").split("/")[-1] or "main"
+        branch = data.get("ref", "").split("/")[-1]
         action = f"pushed to {branch}"
 
-    # PULL REQUEST CREATED
-    elif data.get("action") == "opened" and "pull_request" in data:
-        author = data.get("sender", {}).get("login", "unknown")
+    elif event_type == "pull_request":
+        author = data.get("pull_request", {}).get("user", {}).get("login", "unknown")
         branch = data.get("pull_request", {}).get("base", {}).get("ref", "main")
-        action = f"created pull request to {branch}"
+        pr_action = data.get("action", "")
+        if pr_action == "opened":
+            action = f"created a pull request to {branch}"
+        elif pr_action == "closed" and data["pull_request"].get("merged", False):
+            action = f"merged a pull request to {branch}"
+        else:
+            return "Ignored", 200  # ignore other PR events
 
-    # PULL REQUEST MERGED
-    elif data.get("action") == "closed" and data.get("pull_request", {}).get("merged", False):
-        author = data.get("sender", {}).get("login", "unknown")
-        branch = data.get("pull_request", {}).get("base", {}).get("ref", "main")
-        action = f"merged pull request to {branch}"
+    else:
+        return "Event not handled", 200
 
-    # Format timestamp
-    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)  # IST
     formatted_time = now.strftime("%d %B %Y - %I:%M %p UTC")
 
-    if action:
-        collection.insert_one({
-            "author": author,
-            "action": action,
-            "timestamp": formatted_time
-        })
+    collection.insert_one({
+        "author": author,
+        "action": action,
+        "timestamp": formatted_time
+    })
 
     return "Webhook received", 200
 
